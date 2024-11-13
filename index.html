@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEIC to JPEG Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #e0e7ff;
+            --success: #059669;
+            --success-light: #d1fae5;
+            --error: #dc2626;
+            --error-light: #fee2e2;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            background: #f5f5f5;
+            color: #1f2937;
+            line-height: 1.5;
+        }
+
+        .converter {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .title {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #6b7280;
+            font-size: 0.975rem;
+        }
+
+        .drop-zone {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            margin: 1.5rem 0;
+            transition: all 0.2s ease;
+            background: #ffffff;
+        }
+
+        .drop-zone:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .drop-zone.drag-over {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            transform: scale(1.02);
+        }
+
+        .icon {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .drop-text {
+            font-size: 1.125rem;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .drop-hint {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        #preview {
+            max-width: 100%;
+            margin-top: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .status {
+            margin-top: 1.5rem;
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .error {
+            background: var(--error-light);
+            color: var(--error);
+        }
+
+        .success {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .loading {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .feature {
+            text-align: center;
+        }
+
+        .feature svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .feature h3 {
+            font-size: 0.975rem;
+            margin: 0 0 0.5rem 0;
+            color: #374151;
+        }
+
+        .feature p {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        @media (max-width: 640px) {
+            .features {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+
+        .loader {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--primary);
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="converter">
+        <h1 class="title">HEIC to JPEG Converter</h1>
+        <p class="subtitle">Convert your iPhone photos to JPEG format in seconds</p>
+        
+        <div id="dropZone" class="drop-zone">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p class="drop-text">Drop your HEIC file here</p>
+            <p class="drop-hint">or click to select from your device</p>
+        </div>
+        
+        <div id="status"></div>
+        <img id="preview">
+        <input type="file" id="fileInput" accept=".heic,.HEIC" style="display: none;">
+
+        <div class="features">
+            <div class="feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                    <polyline points="13 2 13 9 20 9"></polyline>
+                </svg>
+                <h3>Free & Private</h3>
+                <p>Your photos never leave your device</p>
+            </div>
+            <div class="feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <h3>Instant Conversion</h3>
+                <p>Convert files in seconds</p>
+            </div>
+            <div class="feature">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <h3>Easy Download</h3>
+                <p>Auto-download after conversion</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const status = document.getElementById('status');
+        const preview = document.getElementById('preview');
+
+        function showStatus(message, type) {
+            const icons = {
+                error: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>`,
+                success: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>`,
+                loading: `<span class="loader"></span>`
+            };
+            
+            status.className = `status ${type}`;
+            status.innerHTML = `${icons[type] || ''} ${message}`;
+        }
+
+        async function convertHeic(file) {
+            try {
+                if (!file.name.toLowerCase().endsWith('.heic')) {
+                    throw new Error('Please select a HEIC file. Other file types are not supported.');
+                }
+
+                showStatus('Converting your image... This may take a few seconds.', 'loading');
+                preview.style.display = 'none';
+
+                const jpegBlob = await heic2any({
+                    blob: file,
+                    toType: 'image/jpeg',
+                    quality: 0.8
+                });
+
+                const previewUrl = URL.createObjectURL(jpegBlob);
+                preview.src = previewUrl;
+                preview.style.display = 'block';
+
+                // Create download link
+                const link = document.createElement('a');
+                link.href = previewUrl;
+                link.download = file.name.replace(/\.heic$/i, '.jpg');
+                link.click();
+
+                showStatus('Success! Your image has been converted and download started automatically.', 'success');
+            } catch (err) {
+                showStatus(err.message || 'An error occurred during conversion. Please try again.', 'error');
+            }
+        }
+
+        // Drag and drop handlers
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) convertHeic(file);
+        });
+
+        // Click to upload
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) convertHeic(file);
+        });
+    </script>
+</body>
+</html>
